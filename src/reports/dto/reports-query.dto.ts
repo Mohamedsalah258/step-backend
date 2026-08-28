@@ -1,0 +1,26 @@
+import { ApiPropertyOptional } from '@nestjs/swagger'
+import { Transform } from 'class-transformer'
+import { IsBooleanString, IsDateString, IsOptional } from 'class-validator'
+
+/** نص فاضي = "مبعوتش" — بيحصل لو الفرونت بعت `from=&to=` بالغلط */
+const emptyToUndefined = ({ value }: { value: unknown }) => (value === '' ? undefined : value)
+
+export class ReportsQueryDto {
+  @ApiPropertyOptional({ description: 'افتراضي: آخر 30 يوم لو مفيش تاريخ محدد' })
+  @IsOptional()
+  @Transform(emptyToUndefined)
+  @IsDateString()
+  from?: string
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Transform(emptyToUndefined)
+  @IsDateString()
+  to?: string
+
+  @ApiPropertyOptional({ description: 'يرجّع مقارنة بالفترة السابقة لو true' })
+  @IsOptional()
+  @Transform(emptyToUndefined)
+  @IsBooleanString()
+  compare?: string
+}

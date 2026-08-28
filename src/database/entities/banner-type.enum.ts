@@ -1,0 +1,4 @@
+export enum BannerType {
+  PROMOTIONAL = 'PROMOTIONAL',
+  INFORMATIONAL = 'INFORMATIONAL',
+}

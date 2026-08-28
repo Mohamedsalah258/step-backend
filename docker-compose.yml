@@ -1,0 +1,25 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: step-backend-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: step_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - step-backend-pgdata:/var/lib/postgresql/data
+
+  adminer:
+    image: adminer
+    container_name: step-backend-adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+
+volumes:
+  step-backend-pgdata:
