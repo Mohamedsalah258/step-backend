@@ -1,0 +1,70 @@
+# Postgres داخل الكلاستر — قرار مؤقت لبداية النشر (مفيش قاعدة بيانات مُدارة
+# جاهزة لسه). النسخ الاحتياطي والصيانة مسؤولية يدوية حاليًا. لو المشروع كبر،
+# الأنسب الانتقال لخدمة مُدارة خارجية (OVH Managed Database مثلًا).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: step-postgres-data
+  namespace: step
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: step-postgres
+  namespace: step
+spec:
+  serviceName: step-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: step-postgres
+  template:
+    metadata:
+      labels:
+        app: step-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: step
+            - name: POSTGRES_DB
+              value: step_db
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: step-backend-secrets
+                  key: POSTGRES_PASSWORD
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+              subPath: pgdata
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "step"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: step-postgres-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: step-postgres
+  namespace: step
+spec:
+  selector:
+    app: step-postgres
+  ports:
+    - port: 5432
+      targetPort: 5432

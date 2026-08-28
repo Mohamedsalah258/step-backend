@@ -1,0 +1,70 @@
+# مجلد الرفع محلي على الـ pod — لازم PVC واحد + replica واحدة بس حاليًا
+# (ReadWriteOnce). لما نستبدله بـ S3 حقيقي (شوف src/uploads)، الشرط ده بيقع.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: step-backend-uploads
+  namespace: step
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: step-backend
+  namespace: step
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: step-backend
+  template:
+    metadata:
+      labels:
+        app: step-backend
+    spec:
+      containers:
+        - name: step-backend
+          image: ghcr.io/mohamedsalah258/step-backend:latest
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - secretRef:
+                name: step-backend-secrets
+          env:
+            - name: PORT
+              value: "3000"
+          volumeMounts:
+            - name: uploads
+              mountPath: /app/uploads
+          readinessProbe:
+            httpGet:
+              path: /maintenance
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /maintenance
+              port: 3000
+            initialDelaySeconds: 20
+            periodSeconds: 20
+      volumes:
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: step-backend-uploads
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: step-backend
+  namespace: step
+spec:
+  selector:
+    app: step-backend
+  ports:
+    - port: 80
+      targetPort: 3000

@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: step-backend
+  namespace: step
+  annotations:
+    cert-manager.io/issuer: letsencrypt-prod-http01
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # الملفات المرفوعة (فيديوهات) ممكن تكبر — الرفع الافتراضي في NestJS 200MB
+    nginx.ingress.kubernetes.io/proxy-body-size: "250m"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: api.step.ma-hb.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: step-backend
+                port:
+                  number: 80
+  tls:
+    - hosts: ["api.step.ma-hb.com"]
+      secretName: step-backend-tls
