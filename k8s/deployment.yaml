@@ -18,6 +18,12 @@ metadata:
   namespace: step
 spec:
   replicas: 1
+  # ⚠️ لازم Recreate مش RollingUpdate (الافتراضي) — الـ pod الجديد والقديم
+  # بيتشاركوا نفس الـ PVC (ReadWriteOnce)، فـ RollingUpdate بيعلّق: الجديد
+  # مستني القديم يسيب الـ volume، والقديم مش هيتقفل غير لما الجديد يبقى
+  # جاهز (deadlock). Recreate بيقفل القديم الأول قبل ما يشغّل الجديد.
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: step-backend
