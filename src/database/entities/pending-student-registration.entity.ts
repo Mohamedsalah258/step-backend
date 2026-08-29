@@ -37,6 +37,9 @@ export class PendingStudentRegistration {
   @Column()
   stageId: string
 
+  @Column({ nullable: true })
+  termId: string | null
+
   @Column()
   deviceIdentifier: string
 

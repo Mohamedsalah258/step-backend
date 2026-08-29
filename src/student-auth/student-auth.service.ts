@@ -104,6 +104,14 @@ export class StudentAuthService {
       this.mustExist(this.stagesRepo, dto.stageId, 'المرحلة غير موجودة'),
     ])
 
+    if (dto.termId !== undefined) {
+      const term = await this.termsRepo.findOne({ where: { id: dto.termId } })
+      if (!term) throw new NotFoundException('الترم غير موجود')
+      if (term.stageId !== dto.stageId) {
+        throw new BadRequestException('الترم المختار مش تابع للمستوى الحالي')
+      }
+    }
+
     const passwordHash = await bcrypt.hash(dto.password, SALT_ROUNDS)
     const otp = generateOtp()
     const otpHash = await bcrypt.hash(otp, SALT_ROUNDS)
@@ -118,6 +126,7 @@ export class StudentAuthService {
     pending.collegeId = dto.collegeId
     pending.specializationId = dto.specializationId
     pending.stageId = dto.stageId
+    pending.termId = dto.termId ?? null
     pending.deviceIdentifier = dto.deviceIdentifier
     pending.deviceModel = dto.deviceModel ?? null
     pending.otpHash = otpHash
@@ -168,6 +177,7 @@ export class StudentAuthService {
         collegeId: pending.collegeId,
         specializationId: pending.specializationId,
         stageId: pending.stageId,
+        termId: pending.termId,
         deviceIdentifier: pending.deviceIdentifier,
         deviceModel: pending.deviceModel,
         status: StudentStatus.ACTIVE,

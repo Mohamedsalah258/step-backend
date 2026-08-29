@@ -37,6 +37,11 @@ export class RegisterStudentDto {
   @IsUUID()
   stageId: string
 
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  termId?: string
+
   @ApiProperty({ description: 'ID دائم بيتولّد على جهاز الطالب — بيتربط بالحساب فورًا' })
   @IsString()
   @IsNotEmpty()
