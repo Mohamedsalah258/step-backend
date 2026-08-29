@@ -26,6 +26,8 @@ export enum ActionType {
   PUBLISH_COURSE = 'publish_course',
   WITHDRAW_COURSE = 'withdraw_course',
   SEND_NOTIFICATION = 'send_notification',
+  ASSIGN_TICKET = 'assign_ticket',
+  TICKET_STATUS_CHANGE = 'ticket_status_change',
 }
 
 export type BadgeTone = 'success' | 'warning' | 'danger' | 'brand' | 'neutral'
@@ -53,6 +55,8 @@ export const ACTION_LABEL_AR: Record<ActionType, string> = {
   [ActionType.STUDENT_PROFILE_UNLOCKED]: 'فتح تعديل البروفايل لطالب',
   [ActionType.STUDENT_PROFILE_LOCKED]: 'قفل تعديل البروفايل لطالب',
   [ActionType.SEND_NOTIFICATION]: 'إرسال إشعار',
+  [ActionType.ASSIGN_TICKET]: 'تعيين تذكرة دعم',
+  [ActionType.TICKET_STATUS_CHANGE]: 'تغيير حالة تذكرة دعم',
 }
 
 /** تون البادج في جدول سجل العمليات (ActivityRow.tone) */
@@ -78,6 +82,8 @@ export const ACTION_TONE: Record<ActionType, BadgeTone> = {
   [ActionType.STUDENT_PROFILE_UNLOCKED]: 'success',
   [ActionType.STUDENT_PROFILE_LOCKED]: 'warning',
   [ActionType.SEND_NOTIFICATION]: 'brand',
+  [ActionType.ASSIGN_TICKET]: 'brand',
+  [ActionType.TICKET_STATUS_CHANGE]: 'neutral',
 }
 
 /**
@@ -107,6 +113,8 @@ export const ACTION_DASHBOARD_STATUS: Record<ActionType, string> = {
   [ActionType.STUDENT_PROFILE_UNLOCKED]: 'مقبول',
   [ActionType.STUDENT_PROFILE_LOCKED]: 'قيد المراجعة',
   [ActionType.SEND_NOTIFICATION]: 'مقبول',
+  [ActionType.ASSIGN_TICKET]: 'مقبول',
+  [ActionType.TICKET_STATUS_CHANGE]: 'مكتمل',
 }
 
 /** النص العربي المعروض كـ "activity" (نوع النشاط) في جدول الداشبورد */

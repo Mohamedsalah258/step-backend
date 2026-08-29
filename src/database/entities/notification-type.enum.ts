@@ -6,4 +6,6 @@ export enum NotificationType {
   SUBSCRIPTION_CANCELLED = 'subscription_cancelled',
   ACCOUNT_BANNED = 'account_banned',
   ADMIN_CUSTOM = 'admin_custom',
+  TICKET_REPLY = 'ticket_reply',
+  TICKET_STATUS_CHANGED = 'ticket_status_changed',
 }
