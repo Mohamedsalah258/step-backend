@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
-import { IsInt, IsISO8601, IsOptional, IsString, Min } from 'class-validator'
+import { IsInt, IsISO8601, IsOptional, IsString, Max, Min } from 'class-validator'
 
 export class ListActivityQueryDto {
   @ApiPropertyOptional({ description: 'بحث بالطالب، الإيميل أو الكورس' })
@@ -30,5 +30,6 @@ export class ListActivityQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(100)
   limit?: number = 10
 }

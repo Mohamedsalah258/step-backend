@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
-import { IsInt, IsOptional, IsUUID, Min } from 'class-validator'
+import { IsInt, IsOptional, IsUUID, Max, Min } from 'class-validator'
 
 /**
  * query موحّد لكل قوائم الهيكل الأكاديمي — page/limit زي أي list تانية
@@ -25,5 +25,6 @@ export class AcademicListQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(100)
   limit?: number = 50
 }

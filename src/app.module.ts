@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { APP_GUARD } from '@nestjs/core'
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { Student } from './database/entities/student.entity'
 import { ResetLog } from './database/entities/reset-log.entity'
@@ -51,6 +52,9 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard'
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    // حد افتراضي عام لكل الـ endpoints — 100 طلب/دقيقة لكل IP. أي endpoint
+    // محتاج حد أضيق (زي /notifications/send) بيستخدم @Throttle محلي فوقه.
+    ThrottlerModule.forRoot([{ name: 'default', ttl: 60000, limit: 100 }]),
     TypeOrmModule.forRoot({
       type: 'postgres',
       url: process.env.DATABASE_URL,
@@ -108,9 +112,10 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard'
     TicketsModule,
   ],
   providers: [
-    // ⚠️ حارس عام على *كل* endpoint في المشروع — أي controller جديد
-    // (حتى لو نسي حد يحطّله @UseGuards يدوي) بيبقى محمي تلقائيًا.
-    // الاستثناء الوحيد: أي route متعلّم صراحةً بـ @Public() (زي /auth/login).
+    // ⚠️ حارسين عامين على *كل* endpoint في المشروع، بالترتيب ده: الـ
+    // rate limit الأول (يرفض الزيادة قبل ما نتعب في التحقق من التوكن)،
+    // بعده الـ JWT (محتاج توكن إلا لو الـ route متعلّم بـ @Public()).
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
   ],
 })

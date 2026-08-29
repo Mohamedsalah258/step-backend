@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Post, Query } from '@nestjs/common'
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
+import { Throttle } from '@nestjs/throttler'
 import { CurrentAdmin } from '../auth/current-admin.decorator'
 import type { JwtPayload } from '../auth/jwt.strategy'
 import { NotificationsService } from './notifications.service'
@@ -20,6 +21,9 @@ export class NotificationsController {
     return this.notificationsService.previewAudience(query.courseId, query.stageId, query.termId)
   }
 
+  /** حد أضيق من الافتراضي — إرسال جماعي (لآلاف الطلاب المرة) خطر أعلى من
+   * أي endpoint تاني لو حساب أدمن اتخترق أو حصل استخدام غلط. */
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('send')
   send(@Body() dto: SendCustomNotificationDto, @CurrentAdmin() admin: JwtPayload) {
     return this.notificationsService.sendCustomNotification(dto, admin)
