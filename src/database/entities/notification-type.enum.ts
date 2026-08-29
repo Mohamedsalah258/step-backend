@@ -5,4 +5,5 @@ export enum NotificationType {
   ORDER_REJECTED = 'order_rejected',
   SUBSCRIPTION_CANCELLED = 'subscription_cancelled',
   ACCOUNT_BANNED = 'account_banned',
+  ADMIN_CUSTOM = 'admin_custom',
 }

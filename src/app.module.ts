@@ -25,6 +25,7 @@ import { MaintenanceLog } from './database/entities/maintenance-log.entity'
 import { ProfileLockState } from './database/entities/profile-lock-state.entity'
 import { PendingStudentRegistration } from './database/entities/pending-student-registration.entity'
 import { Notification } from './database/entities/notification.entity'
+import { NotificationBatch } from './database/entities/notification-batch.entity'
 import { StudentsModule } from './students/students.module'
 import { DashboardModule } from './dashboard/dashboard.module'
 import { ActivityLogModule } from './activity-log/activity-log.module'
@@ -73,6 +74,7 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard'
         ProfileLockState,
         PendingStudentRegistration,
         Notification,
+        NotificationBatch,
       ],
       // ⚠️ synchronize:true مريح في التطوير بس (بيبني الجداول من الـ entities
       // تلقائي من غير migrations). لازم يتقفل ويتستبدل بـ migrations حقيقية

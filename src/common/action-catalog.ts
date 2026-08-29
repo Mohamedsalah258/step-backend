@@ -25,6 +25,7 @@ export enum ActionType {
   DELETE_COURSE = 'delete_course',
   PUBLISH_COURSE = 'publish_course',
   WITHDRAW_COURSE = 'withdraw_course',
+  SEND_NOTIFICATION = 'send_notification',
 }
 
 export type BadgeTone = 'success' | 'warning' | 'danger' | 'brand' | 'neutral'
@@ -51,6 +52,7 @@ export const ACTION_LABEL_AR: Record<ActionType, string> = {
   [ActionType.PROFILE_LOCK_OFF]: 'فتح تعديل البروفايل لكل الطلاب',
   [ActionType.STUDENT_PROFILE_UNLOCKED]: 'فتح تعديل البروفايل لطالب',
   [ActionType.STUDENT_PROFILE_LOCKED]: 'قفل تعديل البروفايل لطالب',
+  [ActionType.SEND_NOTIFICATION]: 'إرسال إشعار',
 }
 
 /** تون البادج في جدول سجل العمليات (ActivityRow.tone) */
@@ -75,6 +77,7 @@ export const ACTION_TONE: Record<ActionType, BadgeTone> = {
   [ActionType.PROFILE_LOCK_OFF]: 'success',
   [ActionType.STUDENT_PROFILE_UNLOCKED]: 'success',
   [ActionType.STUDENT_PROFILE_LOCKED]: 'warning',
+  [ActionType.SEND_NOTIFICATION]: 'brand',
 }
 
 /**
@@ -103,6 +106,7 @@ export const ACTION_DASHBOARD_STATUS: Record<ActionType, string> = {
   [ActionType.PROFILE_LOCK_OFF]: 'مقبول',
   [ActionType.STUDENT_PROFILE_UNLOCKED]: 'مقبول',
   [ActionType.STUDENT_PROFILE_LOCKED]: 'قيد المراجعة',
+  [ActionType.SEND_NOTIFICATION]: 'مقبول',
 }
 
 /** النص العربي المعروض كـ "activity" (نوع النشاط) في جدول الداشبورد */
