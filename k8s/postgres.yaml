@@ -43,6 +43,15 @@ spec:
                 secretKeyRef:
                   name: step-backend-secrets
                   key: POSTGRES_PASSWORD
+          # ⚠️ نفس سبب step-backend — الكلاستر مشترك وكل النودز رامها عالية،
+          # من غير requests/limits القاعدة بتبقى BestEffort وأول حاجة تتأخر.
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
           volumeMounts:
             - name: data
               mountPath: /var/lib/postgresql/data

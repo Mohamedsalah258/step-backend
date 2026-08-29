@@ -43,6 +43,17 @@ spec:
           env:
             - name: PORT
               value: "3000"
+          # ⚠️ مهم على كلاستر مشترك (كل النودز بتلمس رام عالية من مستأجرين
+          # تانيين) — من غيرها الـ pod بيبقى BestEffort QoS، يعني أول واحد
+          # يتأخّر جدولته وقت ضغط، حتى لو استخدامه الفعلي قليل. limits
+          # مرفوعة شوية عشان puppeteer (تصدير PDF بالتقارير) بيحتاج رام أكتر.
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "750m"
+              memory: "768Mi"
           volumeMounts:
             - name: uploads
               mountPath: /app/uploads
