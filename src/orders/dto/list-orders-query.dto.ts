@@ -25,6 +25,21 @@ export class ListOrdersQueryDto {
   @IsUUID()
   courseId?: string
 
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  universityId?: string
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  collegeId?: string
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  specializationId?: string
+
   @ApiPropertyOptional({ default: 1 })
   @IsOptional()
   @Type(() => Number)

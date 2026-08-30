@@ -57,6 +57,7 @@ export class StudentsService {
     const qb = this.studentsRepo
       .createQueryBuilder('student')
       .leftJoin('student.subscriptions', 'sub')
+      .leftJoin('sub.course', 'course')
       .distinct(true)
 
     if (query.q) {
@@ -78,6 +79,20 @@ export class StudentsService {
 
     if (query.course) {
       qb.andWhere('sub.courseName ILIKE :course', { course: `%${query.course}%` })
+    }
+    if (query.courseId) {
+      qb.andWhere('sub."courseId" = :courseId', { courseId: query.courseId })
+    }
+    if (query.universityId) {
+      qb.andWhere('course."universityId" = :universityId', { universityId: query.universityId })
+    }
+    if (query.collegeId) {
+      qb.andWhere('course."collegeId" = :collegeId', { collegeId: query.collegeId })
+    }
+    if (query.specializationId) {
+      qb.andWhere('course."specializationId" = :specializationId', {
+        specializationId: query.specializationId,
+      })
     }
 
     const total = await qb.getCount()

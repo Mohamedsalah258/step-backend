@@ -1,6 +1,14 @@
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Between, IsNull, LessThanOrEqual, Not, Repository } from 'typeorm'
+import {
+  Between,
+  IsNull,
+  LessThanOrEqual,
+  Not,
+  ObjectLiteral,
+  Repository,
+  SelectQueryBuilder,
+} from 'typeorm'
 import { PurchaseRequest } from '../database/entities/purchase-request.entity'
 import { PurchaseRequestStatus } from '../database/entities/purchase-request-status.enum'
 import { Subscription, SubscriptionStatus } from '../database/entities/subscription.entity'
@@ -32,9 +40,11 @@ export class ReportsService {
     const period = parsePeriod(query.from, query.to)
     const compare = query.compare === 'true'
 
-    const currentOrders = await this.approvedOrdersInRange(period)
+    const currentOrders = await this.approvedOrdersInRange(period, query)
     const current = this.aggregateRevenue(currentOrders)
-    const prev = compare ? this.aggregateRevenue(await this.approvedOrdersInRange(previousPeriod(period))) : null
+    const prev = compare
+      ? this.aggregateRevenue(await this.approvedOrdersInRange(previousPeriod(period), query))
+      : null
 
     const rows = [...current.byCollege.entries()]
       .map(([faculty, v]) => {
@@ -88,10 +98,12 @@ export class ReportsService {
     const [totalStudents, activeSubscriptionsCount, currentSubs] = await Promise.all([
       this.studentsRepo.count({ where: { registeredAt: LessThanOrEqual(period.to) } }),
       this.subscriptionsRepo.count({ where: { status: SubscriptionStatus.ACTIVE } }),
-      this.subsInRange(period),
+      this.subsInRange(period, query),
     ])
     const current = this.aggregateStudents(currentSubs)
-    const prev = compare ? this.aggregateStudents(await this.subsInRange(previousPeriod(period))) : null
+    const prev = compare
+      ? this.aggregateStudents(await this.subsInRange(previousPeriod(period), query))
+      : null
 
     const rows = [...current.byCollege.entries()]
       .map(([faculty, v]) => {
@@ -136,9 +148,11 @@ export class ReportsService {
     const period = parsePeriod(query.from, query.to)
     const compare = query.compare === 'true'
 
-    const currentOrders = await this.ordersInRange(period)
+    const currentOrders = await this.ordersInRange(period, query)
     const current = this.aggregateOrders(currentOrders)
-    const prev = compare ? this.aggregateOrders(await this.ordersInRange(previousPeriod(period))) : null
+    const prev = compare
+      ? this.aggregateOrders(await this.ordersInRange(previousPeriod(period), query))
+      : null
 
     const decided = current.approved + current.rejected
     const approvalRate = decided > 0 ? Math.round((current.approved / decided) * 1000) / 10 : 0
@@ -257,11 +271,36 @@ export class ReportsService {
     return this.devicesExportData(query)
   }
 
-  private async approvedOrdersInRange(period: Period) {
-    return this.purchaseRequestsRepo.find({
-      where: { status: PurchaseRequestStatus.APPROVED, createdAt: Between(period.from, period.to) },
-      relations: ['course', 'course.college'],
-    })
+  private async approvedOrdersInRange(period: Period, query: ReportsQueryDto) {
+    const qb = this.purchaseRequestsRepo
+      .createQueryBuilder('o')
+      .leftJoinAndSelect('o.course', 'course')
+      .leftJoinAndSelect('course.college', 'college')
+      .where('o.status = :status', { status: PurchaseRequestStatus.APPROVED })
+      .andWhere('o.createdAt BETWEEN :from AND :to', { from: period.from, to: period.to })
+    this.applyAcademicFilter(qb, 'course', query)
+    return qb.getMany()
+  }
+
+  /** فلترة اختيارية بحسب الهرم الأكاديمي (جامعة/كلية/تخصص) عبر alias الكورس المربوط */
+  private applyAcademicFilter<T extends ObjectLiteral>(
+    qb: SelectQueryBuilder<T>,
+    courseAlias: string,
+    query: Pick<ReportsQueryDto, 'universityId' | 'collegeId' | 'specializationId'>,
+  ): void {
+    if (query.universityId) {
+      qb.andWhere(`${courseAlias}."universityId" = :universityId`, {
+        universityId: query.universityId,
+      })
+    }
+    if (query.collegeId) {
+      qb.andWhere(`${courseAlias}."collegeId" = :collegeId`, { collegeId: query.collegeId })
+    }
+    if (query.specializationId) {
+      qb.andWhere(`${courseAlias}."specializationId" = :specializationId`, {
+        specializationId: query.specializationId,
+      })
+    }
   }
 
   private aggregateRevenue(orders: PurchaseRequest[]) {
@@ -278,11 +317,15 @@ export class ReportsService {
     return { totalRevenue, count: orders.length, byCollege }
   }
 
-  private async subsInRange(period: Period) {
-    return this.subscriptionsRepo.find({
-      where: { status: SubscriptionStatus.ACTIVE, subscribedAt: Between(period.from, period.to) },
-      relations: ['course', 'course.college'],
-    })
+  private async subsInRange(period: Period, query: ReportsQueryDto) {
+    const qb = this.subscriptionsRepo
+      .createQueryBuilder('s')
+      .leftJoinAndSelect('s.course', 'course')
+      .leftJoinAndSelect('course.college', 'college')
+      .where('s.status = :status', { status: SubscriptionStatus.ACTIVE })
+      .andWhere('s.subscribedAt BETWEEN :from AND :to', { from: period.from, to: period.to })
+    this.applyAcademicFilter(qb, 'course', query)
+    return qb.getMany()
   }
 
   private aggregateStudents(subs: Subscription[]) {
@@ -299,11 +342,13 @@ export class ReportsService {
     return { byCollege, uniqueStudents }
   }
 
-  private async ordersInRange(period: Period) {
-    return this.purchaseRequestsRepo.find({
-      where: { createdAt: Between(period.from, period.to) },
-      relations: ['course'],
-    })
+  private async ordersInRange(period: Period, query: ReportsQueryDto) {
+    const qb = this.purchaseRequestsRepo
+      .createQueryBuilder('o')
+      .leftJoinAndSelect('o.course', 'course')
+      .where('o.createdAt BETWEEN :from AND :to', { from: period.from, to: period.to })
+    this.applyAcademicFilter(qb, 'course', query)
+    return qb.getMany()
   }
 
   private aggregateOrders(orders: PurchaseRequest[]) {

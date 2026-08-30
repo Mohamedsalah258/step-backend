@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer'
-import { IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator'
+import { IsIn, IsInt, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 
 export type StudentsTab = 'all' | 'active' | 'banned'
@@ -19,6 +19,26 @@ export class ListStudentsQueryDto {
   @IsOptional()
   @IsString()
   course?: string
+
+  @ApiPropertyOptional({ description: 'فلترة بمطابقة دقيقة لـ id الكورس (بديل عن course بالاسم)' })
+  @IsOptional()
+  @IsUUID()
+  courseId?: string
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  universityId?: string
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  collegeId?: string
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  specializationId?: string
 
   @ApiPropertyOptional({ default: 1 })
   @IsOptional()

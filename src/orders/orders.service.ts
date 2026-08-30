@@ -166,6 +166,17 @@ export class OrdersService {
     // نفسها) وبيطلع SQL تالف. شوف نفس الملاحظة في activity-log.service.ts.
     if (query.date) qb.andWhere('DATE(o."createdAt") = :date', { date: query.date })
     if (query.courseId) qb.andWhere('o."courseId" = :courseId', { courseId: query.courseId })
+    if (query.universityId) {
+      qb.andWhere('course."universityId" = :universityId', { universityId: query.universityId })
+    }
+    if (query.collegeId) {
+      qb.andWhere('course."collegeId" = :collegeId', { collegeId: query.collegeId })
+    }
+    if (query.specializationId) {
+      qb.andWhere('course."specializationId" = :specializationId', {
+        specializationId: query.specializationId,
+      })
+    }
 
     const total = await qb.getCount()
     const rows = await qb
