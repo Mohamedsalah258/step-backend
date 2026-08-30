@@ -30,6 +30,7 @@ import { NotificationBatch } from './database/entities/notification-batch.entity
 import { SupportTicket } from './database/entities/support-ticket.entity'
 import { SupportTicketMessage } from './database/entities/support-ticket-message.entity'
 import { SupportTicketCategory } from './database/entities/support-ticket-category.entity'
+import { ContactSupportMessage } from './database/entities/contact-support-message.entity'
 import { StudentsModule } from './students/students.module'
 import { DashboardModule } from './dashboard/dashboard.module'
 import { ActivityLogModule } from './activity-log/activity-log.module'
@@ -45,6 +46,7 @@ import { MaintenanceModule } from './maintenance/maintenance.module'
 import { ProfileLockModule } from './profile-lock/profile-lock.module'
 import { NotificationsModule } from './notifications/notifications.module'
 import { TicketsModule } from './tickets/tickets.module'
+import { ContactSupportModule } from './contact-support/contact-support.module'
 import { AuthModule } from './auth/auth.module'
 import { StudentAuthModule } from './student-auth/student-auth.module'
 import { JwtAuthGuard } from './auth/jwt-auth.guard'
@@ -86,6 +88,7 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard'
         SupportTicket,
         SupportTicketMessage,
         SupportTicketCategory,
+        ContactSupportMessage,
       ],
       // ⚠️ synchronize:true مريح في التطوير بس (بيبني الجداول من الـ entities
       // تلقائي من غير migrations). لازم يتقفل ويتستبدل بـ migrations حقيقية
@@ -110,6 +113,7 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard'
     StudentAuthModule,
     NotificationsModule,
     TicketsModule,
+    ContactSupportModule,
   ],
   providers: [
     // ⚠️ حارسين عامين على *كل* endpoint في المشروع، بالترتيب ده: الـ

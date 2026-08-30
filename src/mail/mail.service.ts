@@ -58,4 +58,36 @@ export class MailService {
 
     await this.transporter.sendMail({ from: this.fromAddress, to, subject, text, html })
   }
+
+  /**
+   * إشعار لصندوق الدعم برسالة "تواصل مع الدعم" من زائر مش مسجّل دخول.
+   * replyTo بتبقى إيميل الزائر نفسه — أي حد في فريق الدعم يفتح الإيميل ويدوس
+   * "رد" بيتبعت لصاحب الرسالة على طول، من غير أي رابط في التطبيق.
+   */
+  async sendContactSupportNotification(name: string | null, emailForReply: string, message: string): Promise<void> {
+    const subject = `تواصل مع الدعم — ${name ?? emailForReply}`
+    const text = `اسم المرسل: ${name ?? '(مش مكتوب)'}\nالإيميل: ${emailForReply}\n\nالرسالة:\n${message}`
+    const html = `
+      <div dir="rtl" style="font-family: Tahoma, Arial, sans-serif; text-align: right;">
+        <p><strong>اسم المرسل:</strong> ${name ?? '(مش مكتوب)'}</p>
+        <p><strong>الإيميل:</strong> ${emailForReply}</p>
+        <p><strong>الرسالة:</strong></p>
+        <p style="white-space: pre-wrap;">${message}</p>
+      </div>
+    `
+
+    if (!this.transporter) {
+      this.logger.warn(`[DEV FALLBACK — مفيش SMTP حقيقي] رسالة تواصل مع الدعم من ${emailForReply}: ${message}`)
+      return
+    }
+
+    await this.transporter.sendMail({
+      from: this.fromAddress,
+      to: this.fromAddress,
+      replyTo: emailForReply,
+      subject,
+      text,
+      html,
+    })
+  }
 }
