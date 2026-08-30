@@ -1,6 +1,7 @@
 import { BadRequestException, Body, Controller, Get, Param, Patch } from '@nestjs/common'
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { CurrentAdmin } from '../auth/current-admin.decorator'
+import { Public } from '../auth/public.decorator'
 import type { JwtPayload } from '../auth/jwt.strategy'
 import { PolicyType } from '../database/entities/policy-type.enum'
 import { PoliciesService } from './policies.service'
@@ -24,6 +25,9 @@ function resolveType(slug: string): PolicyType {
 export class PoliciesController {
   constructor(private readonly policiesService: PoliciesService) {}
 
+  /** الصفحات دي (خصوصية/استرجاع/شروط) نصوص قانونية عامة — لازم تتقرا من غير
+   * تسجيل دخول (زي أي موقع)، سواء من تطبيق الطالب أو حتى قبل التسجيل. */
+  @Public()
   @Get(':slug')
   getByType(@Param('slug') slug: string) {
     return this.policiesService.getByType(resolveType(slug))
