@@ -2,6 +2,18 @@ import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import * as nodemailer from 'nodemailer'
 
+/** أي نص جاي من مستخدم (اسم/رسالة) بيتحط جوه الـ HTML من غير escaping ممكن
+ * يكسر تصميم الإيميل أو يحقن تاجات — endpoint زي contact-support عام
+ * ومن غير تسجيل دخول، فالنص ده مش موثوق فيه. */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 /**
  * إرسال إيميلات حقيقية عبر SMTP. لو إعدادات SMTP (MAIL_HOST/MAIL_USER/...)
  * مش موجودة في .env — بيقع تلقائيًا على "وضع تطوير": بيطبع الكود في اللوج
@@ -42,14 +54,14 @@ export class MailService {
   async sendOtpEmail(to: string, name: string, otp: string): Promise<void> {
     const subject = 'رمز التحقق — STEP'
     const text = `أهلاً ${name}،\n\nرمز التحقق بتاعك هو: ${otp}\n\nالرمز صالح لمدة ١٠ دقايق. لو محدش طلب ده منك، تجاهل الرسالة دي.`
-    const html = `
-      <div dir="rtl" style="font-family: Tahoma, Arial, sans-serif; text-align: right;">
-        <p>أهلاً ${name}،</p>
-        <p>رمز التحقق بتاعك هو:</p>
-        <p style="font-size: 28px; font-weight: bold; letter-spacing: 4px;">${otp}</p>
-        <p>الرمز صالح لمدة ١٠ دقايق. لو محدش طلب ده منك، تجاهل الرسالة دي.</p>
+    const html = this.renderEmailShell(`
+      <p style="margin:0 0 14px;font-size:14.5px;line-height:1.8;">أهلاً <strong>${escapeHtml(name)}</strong>،</p>
+      <p style="margin:0 0 18px;font-size:14.5px;line-height:1.8;">رمز التحقق بتاعك هو:</p>
+      <div style="text-align:center;margin:0 0 20px;">
+        <span style="display:inline-block;background:#eaeeff;color:#2347e8;font-family:'Spline Sans Mono',ui-monospace,Consolas,monospace;font-size:30px;font-weight:700;letter-spacing:10px;padding:14px 26px;border-radius:10px;">${escapeHtml(otp)}</span>
       </div>
-    `
+      <p style="margin:0;font-size:12.5px;color:#6b7280;line-height:1.8;text-align:center;">الرمز صالح لمدة ١٠ دقايق. لو محدش طلب ده منك، تجاهل الرسالة دي.</p>
+    `)
 
     if (!this.transporter) {
       this.logger.warn(`[DEV FALLBACK — مفيش SMTP حقيقي] كود التحقق لـ ${to}: ${otp}`)
@@ -67,14 +79,23 @@ export class MailService {
   async sendContactSupportNotification(name: string | null, emailForReply: string, message: string): Promise<void> {
     const subject = `تواصل مع الدعم — ${name ?? emailForReply}`
     const text = `اسم المرسل: ${name ?? '(مش مكتوب)'}\nالإيميل: ${emailForReply}\n\nالرسالة:\n${message}`
-    const html = `
-      <div dir="rtl" style="font-family: Tahoma, Arial, sans-serif; text-align: right;">
-        <p><strong>اسم المرسل:</strong> ${name ?? '(مش مكتوب)'}</p>
-        <p><strong>الإيميل:</strong> ${emailForReply}</p>
-        <p><strong>الرسالة:</strong></p>
-        <p style="white-space: pre-wrap;">${message}</p>
+    const html = this.renderEmailShell(`
+      <div style="display:inline-block;font-size:11px;font-weight:700;color:#2347e8;background:#eaeeff;padding:4px 10px;border-radius:999px;margin-bottom:14px;">رسالة تواصل جديدة</div>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
+        <tr>
+          <td style="padding:6px 0;font-size:13px;color:#6b7280;width:70px;">الاسم</td>
+          <td style="padding:6px 0;font-size:13.5px;font-weight:700;color:#0e1116;">${escapeHtml(name ?? '(مش مكتوب)')}</td>
+        </tr>
+        <tr>
+          <td style="padding:6px 0;font-size:13px;color:#6b7280;">الإيميل</td>
+          <td style="padding:6px 0;font-size:13.5px;font-weight:700;color:#0e1116;direction:ltr;text-align:right;">${escapeHtml(emailForReply)}</td>
+        </tr>
+      </table>
+      <div style="padding:14px 16px;background:#f5f7fb;border-radius:8px;">
+        <div style="font-size:11px;font-weight:700;color:#6b7280;margin-bottom:6px;">الرسالة</div>
+        <div style="font-size:13.5px;color:#0e1116;line-height:1.8;white-space:pre-wrap;">${escapeHtml(message)}</div>
       </div>
-    `
+    `)
 
     if (!this.transporter) {
       this.logger.warn(`[DEV FALLBACK — مفيش SMTP حقيقي] رسالة تواصل مع الدعم من ${emailForReply}: ${message}`)
@@ -101,15 +122,14 @@ export class MailService {
   ): Promise<void> {
     const subject = 'رد على رسالتك — STEP'
     const text = `أهلاً ${name ?? ''}،\n\n${replyMessage}\n\n---\nرسالتك الأصلية:\n${originalMessage}`
-    const html = `
-      <div dir="rtl" style="font-family: Tahoma, Arial, sans-serif; text-align: right;">
-        <p>أهلاً ${name ?? ''}،</p>
-        <p style="white-space: pre-wrap;">${replyMessage}</p>
-        <hr style="border: none; border-top: 1px solid #eee; margin: 16px 0;" />
-        <p style="color: #888; font-size: 13px;">رسالتك الأصلية:</p>
-        <p style="white-space: pre-wrap; color: #888; font-size: 13px;">${originalMessage}</p>
+    const html = this.renderEmailShell(`
+      <p style="margin:0 0 14px;font-size:14.5px;line-height:1.8;">أهلاً <strong>${escapeHtml(name ?? '')}</strong>،</p>
+      <p style="margin:0 0 20px;font-size:14.5px;line-height:1.85;white-space:pre-wrap;">${escapeHtml(replyMessage)}</p>
+      <div style="padding:14px 16px;background:#f5f7fb;border-radius:8px;border-right:3px solid #2347e8;">
+        <div style="font-size:11px;font-weight:700;color:#6b7280;margin-bottom:6px;">رسالتك الأصلية</div>
+        <div style="font-size:12.5px;color:#6b7280;line-height:1.8;white-space:pre-wrap;">${escapeHtml(originalMessage)}</div>
       </div>
-    `
+    `)
 
     if (!this.transporter) {
       this.logger.warn(`[DEV FALLBACK — مفيش SMTP حقيقي] رد على ${emailForReply}: ${replyMessage}`)
@@ -117,5 +137,38 @@ export class MailService {
     }
 
     await this.transporter.sendMail({ from: this.fromAddress, to: emailForReply, subject, text, html })
+  }
+
+  /** إطار موحّد لكل إيميلات STEP — هوية بصرية بسيطة (شوف tailwind.config.js
+   * لنفس الألوان) بدل HTML عاري. Table-based + inline styles عمدًا عشان
+   * يبقى متوافق مع Outlook/Gmail/Apple Mail (مفيش دعم كافي لـ <style> tags
+   * أو flexbox/grid في عملاء الإيميل). */
+  private renderEmailShell(bodyHtml: string): string {
+    return `
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f7fb;">
+        <tr><td align="center" style="padding:0;">
+          <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e5e9f2;">
+            <tr>
+              <td style="background:#0b1f66;padding:22px 28px;text-align:center;">
+                <span style="font-family:Tahoma,Arial,sans-serif;font-size:20px;font-weight:700;letter-spacing:3px;color:#ffffff;">STEP</span>
+                <div style="font-family:Tahoma,Arial,sans-serif;font-size:11px;color:#aab4e0;margin-top:5px;letter-spacing:.3px;">لوحة التحكم الأكاديمية</div>
+              </td>
+            </tr>
+            <tr>
+              <td dir="rtl" style="padding:30px 28px;font-family:Tahoma,Arial,sans-serif;text-align:right;color:#0e1116;">
+                ${bodyHtml}
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:16px 28px 20px;border-top:1px solid #e5e9f2;">
+                <div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;font-size:11.5px;color:#9aa1af;line-height:1.9;text-align:center;">
+                  الرسالة دي اتبعتت تلقائيًا من منصة STEP — من فضلك متردّش عليها.<br>
+                  © 2026 STEP
+                </div>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+      </table>`
   }
 }
