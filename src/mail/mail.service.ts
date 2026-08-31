@@ -90,4 +90,32 @@ export class MailService {
       html,
     })
   }
+
+  /** الرد الفعلي على رسالة تواصل مع الدعم — بيتبعت كإيميل حقيقي لصاحب
+   * الرسالة، بديل عن فتح mailto: خارج التطبيق. */
+  async sendContactSupportReply(
+    emailForReply: string,
+    name: string | null,
+    originalMessage: string,
+    replyMessage: string,
+  ): Promise<void> {
+    const subject = 'رد على رسالتك — STEP'
+    const text = `أهلاً ${name ?? ''}،\n\n${replyMessage}\n\n---\nرسالتك الأصلية:\n${originalMessage}`
+    const html = `
+      <div dir="rtl" style="font-family: Tahoma, Arial, sans-serif; text-align: right;">
+        <p>أهلاً ${name ?? ''}،</p>
+        <p style="white-space: pre-wrap;">${replyMessage}</p>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 16px 0;" />
+        <p style="color: #888; font-size: 13px;">رسالتك الأصلية:</p>
+        <p style="white-space: pre-wrap; color: #888; font-size: 13px;">${originalMessage}</p>
+      </div>
+    `
+
+    if (!this.transporter) {
+      this.logger.warn(`[DEV FALLBACK — مفيش SMTP حقيقي] رد على ${emailForReply}: ${replyMessage}`)
+      return
+    }
+
+    await this.transporter.sendMail({ from: this.fromAddress, to: emailForReply, subject, text, html })
+  }
 }

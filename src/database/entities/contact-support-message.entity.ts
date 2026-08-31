@@ -19,6 +19,17 @@ export class ContactSupportMessage {
   @Column({ type: 'text' })
   message: string
 
+  /** لو الأدمن رد من الداشبورد (POST /contact-support/:id/reply) — بيتبعت
+   * كإيميل حقيقي على emailForReply، مفيش محادثة داخل التطبيق زي SupportTicket. */
+  @Column({ type: 'text', nullable: true })
+  replyMessage: string | null
+
+  @Column({ type: 'timestamptz', nullable: true })
+  repliedAt: Date | null
+
+  @Column({ nullable: true })
+  repliedByAdminName: string | null
+
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date
 }

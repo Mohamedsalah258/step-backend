@@ -5,6 +5,7 @@ import { SupportTicketMessage } from '../database/entities/support-ticket-messag
 import { SupportTicketCategory } from '../database/entities/support-ticket-category.entity'
 import { Admin } from '../database/entities/admin.entity'
 import { ActivityLog } from '../database/entities/activity-log.entity'
+import { ContactSupportMessage } from '../database/entities/contact-support-message.entity'
 import { MaintenanceModule } from '../maintenance/maintenance.module'
 import { UploadsModule } from '../uploads/uploads.module'
 import { NotificationsModule } from '../notifications/notifications.module'
@@ -14,7 +15,14 @@ import { TicketsService } from './tickets.service'
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([SupportTicket, SupportTicketMessage, SupportTicketCategory, Admin, ActivityLog]),
+    TypeOrmModule.forFeature([
+      SupportTicket,
+      SupportTicketMessage,
+      SupportTicketCategory,
+      Admin,
+      ActivityLog,
+      ContactSupportMessage,
+    ]),
     MaintenanceModule,
     UploadsModule,
     NotificationsModule,

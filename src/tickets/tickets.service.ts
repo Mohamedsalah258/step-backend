@@ -10,6 +10,7 @@ import { SupportTicketSenderType } from '../database/entities/support-ticket-sen
 import { NotificationType } from '../database/entities/notification-type.enum'
 import { Admin } from '../database/entities/admin.entity'
 import { ActivityLog } from '../database/entities/activity-log.entity'
+import { ContactSupportMessage } from '../database/entities/contact-support-message.entity'
 import { ActionType } from '../common/action-catalog'
 import { PaginatedResult } from '../common/paginated-result'
 import { UploadsService } from '../uploads/uploads.service'
@@ -56,6 +57,7 @@ export class TicketsService {
     @InjectRepository(SupportTicketCategory) private categoriesRepo: Repository<SupportTicketCategory>,
     @InjectRepository(Admin) private adminsRepo: Repository<Admin>,
     @InjectRepository(ActivityLog) private activityRepo: Repository<ActivityLog>,
+    @InjectRepository(ContactSupportMessage) private contactSupportRepo: Repository<ContactSupportMessage>,
     private readonly uploadsService: UploadsService,
     private readonly notificationsService: NotificationsService,
   ) {}
@@ -151,9 +153,20 @@ export class TicketsService {
    * الأدمن — يشوف ويدير كل التذاكر
    * ====================================================================== */
 
+  /**
+   * القائمة بتدمج تذاكر الطلاب المسجلين (SupportTicket) مع رسايل "تواصل مع
+   * الدعم" من زوار مش مسجلين (ContactSupportMessage — جدول منفصل تمامًا،
+   * مفيهوش status/priority/category). كل صف بياخد `kind` عشان الداشبورد
+   * يميّز بينهم بصريًا. رسايل الزوار بتظهر بس في تاب "all" من غير فلتر
+   * priority/categoryId/assignedAdminId — دول أعمدة مش موجودة أصلًا عندهم،
+   * فأي فلتر بيهم لازم يستبعدهم بدل ما يتلفّق لهم قيمة وهمية.
+   */
   async list(query: ListTicketsQueryDto): Promise<PaginatedResult<unknown>> {
     const page = query.page ?? 1
     const limit = query.limit ?? 10
+    // top-K من كل مصدر كافي عشان نضمن صحة الصفحة الحالية بعد الدمج — شوف
+    // ملاحظة الدمج تحت (تقنية شائعة لدمج قوائم مرتبة من مصادر مختلفة).
+    const mergeFetchCap = page * limit
 
     const qb = this.ticketsRepo
       .createQueryBuilder('t')
@@ -177,42 +190,95 @@ export class TicketsService {
       qb.andWhere('t.assignedAdminId = :assignedAdminId', { assignedAdminId: query.assignedAdminId })
     }
 
-    const total = await qb.getCount()
-    const rows = await qb
-      .orderBy('t.updatedAt', 'DESC')
-      .skip((page - 1) * limit)
-      .take(limit)
-      .getMany()
+    const ticketTotal = await qb.getCount()
+    const ticketRows = await qb.orderBy('t.updatedAt', 'DESC').take(mergeFetchCap).getMany()
 
-    const [all, open, inProgress, resolved, closed, cancelled] = await Promise.all([
+    const [all, open, inProgress, resolved, closed, cancelled, guestAllCount] = await Promise.all([
       this.ticketsRepo.count(),
       this.ticketsRepo.count({ where: { status: SupportTicketStatus.OPEN } }),
       this.ticketsRepo.count({ where: { status: SupportTicketStatus.IN_PROGRESS } }),
       this.ticketsRepo.count({ where: { status: SupportTicketStatus.RESOLVED } }),
       this.ticketsRepo.count({ where: { status: SupportTicketStatus.CLOSED } }),
       this.ticketsRepo.count({ where: { status: SupportTicketStatus.CANCELLED } }),
+      this.contactSupportRepo.count(),
     ])
 
+    const includeGuests =
+      (!query.tab || query.tab === 'all') && !query.priority && !query.categoryId && !query.assignedAdminId
+
+    let guestRows: ContactSupportMessage[] = []
+    let guestTotal = 0
+    if (includeGuests) {
+      const gqb = this.contactSupportRepo.createQueryBuilder('c')
+      if (query.q) {
+        gqb.andWhere(
+          new Brackets((b) => {
+            b.where('c.name ILIKE :q', { q: `%${query.q}%` })
+              .orWhere('c.emailForReply ILIKE :q', { q: `%${query.q}%` })
+              .orWhere('c.message ILIKE :q', { q: `%${query.q}%` })
+          }),
+        )
+      }
+      guestTotal = await gqb.getCount()
+      guestRows = await gqb.orderBy('c.createdAt', 'DESC').take(mergeFetchCap).getMany()
+    }
+
+    const merged = [
+      ...ticketRows.map((t) => ({ sortDate: t.updatedAt, row: this.toAdminTicketRow(t) })),
+      ...guestRows.map((c) => ({ sortDate: c.createdAt, row: this.toGuestContactRow(c) })),
+    ]
+      .sort((a, b) => b.sortDate.getTime() - a.sortDate.getTime())
+      .slice((page - 1) * limit, page * limit)
+      .map((x) => x.row)
+
+    const total = ticketTotal + guestTotal
+
     return {
-      data: rows.map((t) => ({
-        id: t.id,
-        subject: t.subject,
-        student: { id: t.student.id, name: t.student.name },
-        category: t.category?.name ?? null,
-        priority: t.priority,
-        status: STATUS_AR[t.status],
-        statusRaw: t.status,
-        assignedAdminName: t.assignedAdminName,
-        createdAt: t.createdAt.toISOString(),
-        updatedAt: t.updatedAt.toISOString(),
-      })),
+      data: merged,
       meta: {
         page,
         limit,
         total,
         totalPages: Math.max(1, Math.ceil(total / limit)),
-        tabs: { all, open, inProgress, resolved, closed, cancelled },
+        tabs: { all: all + guestAllCount, open, inProgress, resolved, closed, cancelled },
       },
+    }
+  }
+
+  private toAdminTicketRow(t: SupportTicket) {
+    return {
+      kind: 'STUDENT_TICKET' as const,
+      id: t.id,
+      subject: t.subject,
+      student: { id: t.student.id, name: t.student.name, email: t.student.email },
+      category: t.category?.name ?? null,
+      priority: t.priority,
+      status: STATUS_AR[t.status],
+      statusRaw: t.status,
+      assignedAdminName: t.assignedAdminName,
+      createdAt: t.createdAt.toISOString(),
+      updatedAt: t.updatedAt.toISOString(),
+    }
+  }
+
+  /** ماله محادثة داخل التطبيق زي SupportTicket — الأدمن بيرد من الداشبورد
+   * (POST /contact-support/:id/reply) وبيتبعت إيميل حقيقي على طول. */
+  private toGuestContactRow(c: ContactSupportMessage) {
+    return {
+      kind: 'GUEST_CONTACT' as const,
+      id: c.id,
+      subject: c.message.length > 60 ? `${c.message.slice(0, 60)}…` : c.message,
+      message: c.message,
+      student: { id: null, name: c.name ?? c.emailForReply, email: c.emailForReply },
+      category: null,
+      priority: null,
+      status: c.repliedAt ? 'تم الرد' : 'رسالة تواصل',
+      statusRaw: null,
+      assignedAdminName: c.repliedByAdminName,
+      replyMessage: c.replyMessage,
+      repliedAt: c.repliedAt?.toISOString() ?? null,
+      createdAt: c.createdAt.toISOString(),
+      updatedAt: c.createdAt.toISOString(),
     }
   }
 
