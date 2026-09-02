@@ -10,6 +10,7 @@ const DEFAULT_HEADING: Record<PolicyType, string> = {
   [PolicyType.PRIVACY]: 'سياسة الخصوصية',
   [PolicyType.REFUND]: 'سياسة الاسترجاع والاستبدال',
   [PolicyType.TERMS]: 'الشروط والأحكام',
+  [PolicyType.DELETION]: 'سياسة حذف الحساب والبيانات',
 }
 
 const DEFAULT_CONTENT = 'محتوى الصفحة لسه ما اتكتبش — عدّله من هنا.'

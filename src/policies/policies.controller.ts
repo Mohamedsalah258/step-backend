@@ -11,6 +11,7 @@ const SLUG_TO_TYPE: Record<string, PolicyType> = {
   privacy: PolicyType.PRIVACY,
   refund: PolicyType.REFUND,
   terms: PolicyType.TERMS,
+  deletion: PolicyType.DELETION,
 }
 
 function resolveType(slug: string): PolicyType {
