@@ -17,8 +17,10 @@ import { Specialization } from '../database/entities/specialization.entity'
 import { Stage } from '../database/entities/stage.entity'
 import { Term } from '../database/entities/term.entity'
 import { PendingStudentRegistration } from '../database/entities/pending-student-registration.entity'
+import { ActivityLog } from '../database/entities/activity-log.entity'
 import { AppException } from '../common/exceptions/app-exception'
 import { ErrorCode } from '../common/exceptions/error-code.enum'
+import { ActionType } from '../common/action-catalog'
 import { MailService } from '../mail/mail.service'
 import { ProfileLockService } from '../profile-lock/profile-lock.service'
 import { RegisterStudentDto } from './dto/register-student.dto'
@@ -51,6 +53,7 @@ export class StudentAuthService {
     @InjectRepository(Term) private termsRepo: Repository<Term>,
     @InjectRepository(PendingStudentRegistration)
     private pendingRegRepo: Repository<PendingStudentRegistration>,
+    @InjectRepository(ActivityLog) private activityRepo: Repository<ActivityLog>,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
     private readonly profileLockService: ProfileLockService,
@@ -235,6 +238,37 @@ export class StudentAuthService {
     const student = await this.studentsRepo.findOne({ where: { id: studentId } })
     if (!student) throw new NotFoundException('الحساب غير موجود')
     return this.toPublicStudent(student)
+  }
+
+  /**
+   * حذف الحساب من التطبيق — مفيش حذف فعلي للبيانات، بيستخدم نفس آلية الحظر
+   * اللي الأدمن بيستخدمها (BANNED). ده كافي عمليًا: الطالب مش هيقدر يسجّل
+   * دخول تاني، وأي طلب بالتوكن الحالي هيترفض فورًا لإن StudentJwtStrategy
+   * بيتحقق من status في كل request مش وقت اللوجين بس — يعني التوكن بيتلغى
+   * فعليًا من غير أي آلية blacklist إضافية. بيتسجّل في activity log منفصل
+   * عن BAN_STUDENT (adminId: null) عشان الأدمن يقدر يفرّق حذف ذاتي عن حظر إداري.
+   */
+  async deleteOwnAccount(studentId: string): Promise<{ ok: true }> {
+    const student = await this.studentsRepo.findOne({ where: { id: studentId } })
+    if (!student) throw new NotFoundException('الحساب غير موجود')
+
+    if (student.status !== StudentStatus.BANNED) {
+      student.status = StudentStatus.BANNED
+      await this.studentsRepo.save(student)
+
+      await this.activityRepo.save(
+        this.activityRepo.create({
+          actionType: ActionType.STUDENT_SELF_DELETE,
+          studentId: student.id,
+          studentNameSnapshot: student.name,
+          adminId: null,
+          adminName: 'الطالب نفسه',
+          details: 'حذف الحساب ذاتيًا من التطبيق',
+        }),
+      )
+    }
+
+    return { ok: true }
   }
 
   /**

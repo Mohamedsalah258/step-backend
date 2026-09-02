@@ -10,6 +10,7 @@ import { Specialization } from '../database/entities/specialization.entity'
 import { Stage } from '../database/entities/stage.entity'
 import { Term } from '../database/entities/term.entity'
 import { PendingStudentRegistration } from '../database/entities/pending-student-registration.entity'
+import { ActivityLog } from '../database/entities/activity-log.entity'
 import { MailModule } from '../mail/mail.module'
 import { ProfileLockModule } from '../profile-lock/profile-lock.module'
 import { MaintenanceModule } from '../maintenance/maintenance.module'
@@ -27,6 +28,7 @@ import { StudentJwtStrategy } from './student-jwt.strategy'
       Stage,
       Term,
       PendingStudentRegistration,
+      ActivityLog,
     ]),
     MailModule,
     ProfileLockModule,

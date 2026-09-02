@@ -28,6 +28,7 @@ export enum ActionType {
   SEND_NOTIFICATION = 'send_notification',
   ASSIGN_TICKET = 'assign_ticket',
   TICKET_STATUS_CHANGE = 'ticket_status_change',
+  STUDENT_SELF_DELETE = 'student_self_delete',
 }
 
 export type BadgeTone = 'success' | 'warning' | 'danger' | 'brand' | 'neutral'
@@ -57,6 +58,7 @@ export const ACTION_LABEL_AR: Record<ActionType, string> = {
   [ActionType.SEND_NOTIFICATION]: 'إرسال إشعار',
   [ActionType.ASSIGN_TICKET]: 'تعيين تذكرة دعم',
   [ActionType.TICKET_STATUS_CHANGE]: 'تغيير حالة تذكرة دعم',
+  [ActionType.STUDENT_SELF_DELETE]: 'حذف حساب ذاتي من الطالب',
 }
 
 /** تون البادج في جدول سجل العمليات (ActivityRow.tone) */
@@ -84,6 +86,7 @@ export const ACTION_TONE: Record<ActionType, BadgeTone> = {
   [ActionType.SEND_NOTIFICATION]: 'brand',
   [ActionType.ASSIGN_TICKET]: 'brand',
   [ActionType.TICKET_STATUS_CHANGE]: 'neutral',
+  [ActionType.STUDENT_SELF_DELETE]: 'danger',
 }
 
 /**
@@ -115,6 +118,7 @@ export const ACTION_DASHBOARD_STATUS: Record<ActionType, string> = {
   [ActionType.SEND_NOTIFICATION]: 'مقبول',
   [ActionType.ASSIGN_TICKET]: 'مقبول',
   [ActionType.TICKET_STATUS_CHANGE]: 'مكتمل',
+  [ActionType.STUDENT_SELF_DELETE]: 'محظور',
 }
 
 /** النص العربي المعروض كـ "activity" (نوع النشاط) في جدول الداشبورد */

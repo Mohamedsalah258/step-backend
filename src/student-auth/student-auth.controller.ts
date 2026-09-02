@@ -75,4 +75,14 @@ export class StudentAuthController {
   ) {
     return this.studentAuthService.updateProfile(student.sub, dto)
   }
+
+  /** حذف الحساب من التطبيق — نفس آلية الحظر (BANNED)، شوف التوثيق في
+   * StudentAuthService.deleteOwnAccount. التوكن الحالي بيتلغى فعليًا فورًا. */
+  @Public()
+  @ApiBearerAuth()
+  @UseGuards(StudentJwtAuthGuard)
+  @Post('delete-account')
+  deleteAccount(@CurrentStudent() student: StudentJwtPayload) {
+    return this.studentAuthService.deleteOwnAccount(student.sub)
+  }
 }
