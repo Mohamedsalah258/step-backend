@@ -47,16 +47,27 @@ spec:
           # تانيين) — من غيرها الـ pod بيبقى BestEffort QoS، يعني أول واحد
           # يتأخّر جدولته وقت ضغط، حتى لو استخدامه الفعلي قليل. limits
           # مرفوعة شوية عشان puppeteer (تصدير PDF بالتقارير) بيحتاج رام أكتر.
+          # الزيادة من 768Mi لـ 1Gi بتقابل الـ 256Mi اللي بقت محجوزة لـ
+          # dshm تحت (tmpfs بيتحسب من نفس memory cgroup limit) — من غيرها
+          # هنكون قلّلنا مساحة الهيب المتاحة فعليًا لـ Chromium/الأبلكيشن.
           resources:
             requests:
               cpu: "100m"
               memory: "256Mi"
             limits:
               cpu: "750m"
-              memory: "768Mi"
+              memory: "1Gi"
           volumeMounts:
             - name: uploads
               mountPath: /app/uploads
+            # ⚠️ /dev/shm الافتراضي في الكونتينرات صغير جدًا (~64MB) — Chromium
+            # بيحتاج أكتر من كده للرندر، فبيكراش وقت تصدير PDF (500 على
+            # /reports/:kind/export.pdf بس). --disable-dev-shm-usage (شوف
+            # report-export.util.ts) بيوجّه Chromium لـ /tmp بدلها، بس ده
+            # مش كفاية لوحده لو الكراش أصله OOM على مستوى الكونتينر مش shm
+            # تحديدًا — الماونت ده بيدّي shm حقيقي كمان كطبقة حماية إضافية.
+            - name: dshm
+              mountPath: /dev/shm
           readinessProbe:
             httpGet:
               path: /maintenance
@@ -73,6 +84,10 @@ spec:
         - name: uploads
           persistentVolumeClaim:
             claimName: step-backend-uploads
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 256Mi
 ---
 apiVersion: v1
 kind: Service
