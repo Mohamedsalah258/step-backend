@@ -116,7 +116,11 @@ export async function buildPdf(
   const html = reportHtml(title, subtitle, stats, headers, rows)
   const browser = await puppeteer.launch({
     headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    // ⚠️ --disable-dev-shm-usage ضروري في k8s: الكونتينرات بتيجي بـ /dev/shm
+    // صغير جدًا (~64MB) افتراضيًا، وChromium محتاج أكتر من كده فبيكراش وقت
+    // الرندر (500 على /export.pdf بس، الشاشة والتصدير التاني شغالين عادي).
+    // الفلاج ده بيخلي Chromium يستخدم /tmp بدل /dev/shm.
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
   })
   try {
     const page = await browser.newPage()
