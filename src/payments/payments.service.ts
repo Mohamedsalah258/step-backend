@@ -57,9 +57,28 @@ export class PaymentsService {
     return { ok: true, id: saved.id }
   }
 
+  /**
+   * ⚠️ لو الحقل الاختياري (accountNumber/bankName/holderName/instructions)
+   * اتبعت كنص فاضي "" صراحةً — يعني الأدمن قصده يمسح القيمة، مش سيبها
+   * زي ما هي. TypeORM .update() بيتجاهل أي مفتاح مش موجود في الـ object
+   * أصلًا، فده بيفرّق فعليًا بين "متبعتش الحقل ده" (يفضل زي ما هو) و"بعته
+   * فاضي" (امسحه) — بدل ما الفاضي يتخزن '' بدل null زي وقت الإنشاء.
+   */
   async update(id: string, dto: UpdatePaymentMethodDto) {
     await this.mustFind(id)
-    await this.methodsRepo.update(id, dto)
+    const nullableFields = ['accountNumber', 'bankName', 'holderName', 'instructions'] as const
+    const nullableUpdates: Partial<Record<(typeof nullableFields)[number], string | null>> = {}
+    for (const field of nullableFields) {
+      if (dto[field] !== undefined) {
+        nullableUpdates[field] = dto[field] === '' ? null : dto[field]
+      }
+    }
+    await this.methodsRepo.update(id, {
+      ...(dto.name !== undefined && { name: dto.name }),
+      ...(dto.type !== undefined && { type: dto.type }),
+      ...(dto.isActive !== undefined && { isActive: dto.isActive }),
+      ...nullableUpdates,
+    })
     return { ok: true }
   }
 
