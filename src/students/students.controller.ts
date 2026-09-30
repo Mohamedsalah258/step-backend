@@ -54,6 +54,16 @@ export class StudentsController {
     return this.studentsService.lockProfile(id, admin)
   }
 
+  @Post(':id/device-lock-exempt')
+  exemptDeviceLock(@Param('id') id: string, @CurrentAdmin() admin: JwtPayload) {
+    return this.studentsService.exemptDeviceLock(id, admin)
+  }
+
+  @Post(':id/device-lock-enforce')
+  enforceDeviceLock(@Param('id') id: string, @CurrentAdmin() admin: JwtPayload) {
+    return this.studentsService.enforceDeviceLock(id, admin)
+  }
+
   @Post(':id/subscriptions/:subId/cancel')
   cancelSubscription(
     @Param('id') id: string,

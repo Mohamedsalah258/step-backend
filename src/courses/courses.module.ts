@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { Course } from '../database/entities/course.entity'
+import { Student } from '../database/entities/student.entity'
 import { University } from '../database/entities/university.entity'
 import { College } from '../database/entities/college.entity'
 import { Specialization } from '../database/entities/specialization.entity'
@@ -21,6 +22,7 @@ import { CoursesService } from './courses.service'
   imports: [
     TypeOrmModule.forFeature([
       Course,
+      Student,
       University,
       College,
       Specialization,

@@ -7,6 +7,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm'
 import { In, Repository } from 'typeorm'
 import { Course } from '../database/entities/course.entity'
+import { Student } from '../database/entities/student.entity'
 import { University } from '../database/entities/university.entity'
 import { College } from '../database/entities/college.entity'
 import { Specialization } from '../database/entities/specialization.entity'
@@ -56,6 +57,7 @@ function simpleStatusAr(status: CourseStatus): string {
 export class CoursesService {
   constructor(
     @InjectRepository(Course) private coursesRepo: Repository<Course>,
+    @InjectRepository(Student) private studentsRepo: Repository<Student>,
     @InjectRepository(University) private universitiesRepo: Repository<University>,
     @InjectRepository(College) private collegesRepo: Repository<College>,
     @InjectRepository(Specialization)
@@ -162,23 +164,37 @@ export class CoursesService {
     const page = query.page ?? 1
     const limit = query.limit ?? 12
 
+    // الأربع حقول دي بتحدد "مين الطالب ده" أكاديميًا، مش مجرد تفضيل بحث —
+    // مينفعش نسيبها فاضية تتفسّر كـ "من غير فلتر" وإلا الطالب هيشوف كورسات
+    // جامعات تانية مخلوطة مع بعض (باج حقيقي اتبلّغ عنه). query.X بتاخد
+    // أولوية لو اتبعتت صراحة، وإلا بنرجع لبروفايل الطالب نفسه.
+    const student = await this.studentsRepo.findOne({
+      where: { id: studentId },
+      select: ['universityId', 'collegeId', 'specializationId', 'stageId'],
+    })
+
+    const universityId = query.universityId ?? student?.universityId ?? undefined
+    const collegeId = query.collegeId ?? student?.collegeId ?? undefined
+    const specializationId = query.specializationId ?? student?.specializationId ?? undefined
+    const stageId = query.stageId ?? student?.stageId ?? undefined
+
+    // لو ولا الطلب ولا بروفايل الطالب بيحدد الأربع حقول دي كاملة (بروفايل
+    // ناقص، لسه محددش هيكله الأكاديمي)، نرجّع نتيجة فاضية بدل "كل الكورسات".
+    if (!universityId || !collegeId || !specializationId || !stageId) {
+      return { data: [], meta: { page, limit, total: 0, totalPages: 1 } }
+    }
+
     const qb = this.coursesRepo
       .createQueryBuilder('course')
       .leftJoinAndSelect('course.college', 'college')
       .leftJoinAndSelect('course.term', 'term')
       .where('course.status = :status', { status: CourseStatus.PUBLISHED })
+      .andWhere('course.universityId = :universityId', { universityId })
+      .andWhere('course.collegeId = :collegeId', { collegeId })
+      .andWhere('course.specializationId = :specializationId', { specializationId })
+      .andWhere('course.stageId = :stageId', { stageId })
 
     if (query.q) qb.andWhere('course.name ILIKE :q', { q: `%${query.q}%` })
-    if (query.universityId) {
-      qb.andWhere('course.universityId = :universityId', { universityId: query.universityId })
-    }
-    if (query.collegeId) qb.andWhere('course.collegeId = :collegeId', { collegeId: query.collegeId })
-    if (query.specializationId) {
-      qb.andWhere('course.specializationId = :specializationId', {
-        specializationId: query.specializationId,
-      })
-    }
-    if (query.stageId) qb.andWhere('course.stageId = :stageId', { stageId: query.stageId })
     if (query.termId) qb.andWhere('course.termId = :termId', { termId: query.termId })
 
     const total = await qb.getCount()

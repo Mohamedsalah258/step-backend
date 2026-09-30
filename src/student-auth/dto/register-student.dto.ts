@@ -16,10 +16,10 @@ export class RegisterStudentDto {
   @MinLength(8)
   password: string
 
-  @ApiProperty()
+  @ApiPropertyOptional({ description: 'اختياري — Apple Guideline 5.1.1(v) بيمنع طلبه كحقل إجباري' })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  phone: string
+  phone?: string
 
   @ApiProperty()
   @IsUUID()

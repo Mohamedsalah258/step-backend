@@ -29,6 +29,8 @@ export enum ActionType {
   ASSIGN_TICKET = 'assign_ticket',
   TICKET_STATUS_CHANGE = 'ticket_status_change',
   STUDENT_SELF_DELETE = 'student_self_delete',
+  DEVICE_LOCK_EXEMPT_ON = 'device_lock_exempt_on',
+  DEVICE_LOCK_EXEMPT_OFF = 'device_lock_exempt_off',
 }
 
 export type BadgeTone = 'success' | 'warning' | 'danger' | 'brand' | 'neutral'
@@ -59,6 +61,8 @@ export const ACTION_LABEL_AR: Record<ActionType, string> = {
   [ActionType.ASSIGN_TICKET]: 'تعيين تذكرة دعم',
   [ActionType.TICKET_STATUS_CHANGE]: 'تغيير حالة تذكرة دعم',
   [ActionType.STUDENT_SELF_DELETE]: 'حذف حساب ذاتي من الطالب',
+  [ActionType.DEVICE_LOCK_EXEMPT_ON]: 'استثناء طالب من قفل الجهاز',
+  [ActionType.DEVICE_LOCK_EXEMPT_OFF]: 'إلغاء استثناء طالب من قفل الجهاز',
 }
 
 /** تون البادج في جدول سجل العمليات (ActivityRow.tone) */
@@ -87,6 +91,8 @@ export const ACTION_TONE: Record<ActionType, BadgeTone> = {
   [ActionType.ASSIGN_TICKET]: 'brand',
   [ActionType.TICKET_STATUS_CHANGE]: 'neutral',
   [ActionType.STUDENT_SELF_DELETE]: 'danger',
+  [ActionType.DEVICE_LOCK_EXEMPT_ON]: 'warning',
+  [ActionType.DEVICE_LOCK_EXEMPT_OFF]: 'success',
 }
 
 /**
@@ -119,6 +125,8 @@ export const ACTION_DASHBOARD_STATUS: Record<ActionType, string> = {
   [ActionType.ASSIGN_TICKET]: 'مقبول',
   [ActionType.TICKET_STATUS_CHANGE]: 'مكتمل',
   [ActionType.STUDENT_SELF_DELETE]: 'محظور',
+  [ActionType.DEVICE_LOCK_EXEMPT_ON]: 'قيد المراجعة',
+  [ActionType.DEVICE_LOCK_EXEMPT_OFF]: 'مقبول',
 }
 
 /** النص العربي المعروض كـ "activity" (نوع النشاط) في جدول الداشبورد */

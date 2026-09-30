@@ -37,8 +37,8 @@ export class Student {
   @Column({ unique: true })
   email: string
 
-  @Column()
-  phone: string
+  @Column({ nullable: true })
+  phone: string | null
 
   @Column({ type: 'enum', enum: StudentStatus, default: StudentStatus.ACTIVE })
   status: StudentStatus
@@ -91,6 +91,13 @@ export class Student {
    * الأكاديمية العام (شوف ProfileLockService) لحد ما الأدمن يقفله تاني. */
   @Column({ default: false })
   profileEditUnlocked: boolean
+
+  /** استثناء يدوي لقفل الجهاز الواحد — لحسابات زي حساب مراجعة أبل/جوجل
+   * اللي لازم تسجّل دخول من أجهزة مختلفة في كل مرة مراجعة (شوف
+   * StudentAuthService.login). مش معناها إلغاء تتبع الجهاز، بس تجاهل
+   * رفض DEVICE_MISMATCH للحساب ده بالذات. */
+  @Column({ default: false })
+  deviceLockExempt: boolean
 
   @Column({ nullable: true })
   deviceModel: string | null

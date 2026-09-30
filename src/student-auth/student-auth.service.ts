@@ -123,7 +123,7 @@ export class StudentAuthService {
       (await this.pendingRegRepo.findOne({ where: { email: dto.email } })) ??
       this.pendingRegRepo.create({ email: dto.email })
     pending.name = dto.name
-    pending.phone = dto.phone
+    pending.phone = dto.phone ?? null
     pending.passwordHash = passwordHash
     pending.universityId = dto.universityId
     pending.collegeId = dto.collegeId
@@ -216,7 +216,11 @@ export class StudentAuthService {
       )
     }
 
-    if (student.deviceIdentifier && student.deviceIdentifier !== dto.deviceIdentifier) {
+    if (
+      !student.deviceLockExempt &&
+      student.deviceIdentifier &&
+      student.deviceIdentifier !== dto.deviceIdentifier
+    ) {
       throw new AppException(
         ErrorCode.DEVICE_MISMATCH,
         'الحساب مربوط بجهاز تاني — تواصل مع الدعم لتغيير الجهاز',
@@ -225,7 +229,7 @@ export class StudentAuthService {
       )
     }
 
-    if (!student.deviceIdentifier) {
+    if (student.deviceIdentifier !== dto.deviceIdentifier) {
       student.deviceIdentifier = dto.deviceIdentifier
       student.deviceModel = dto.deviceModel ?? student.deviceModel
       await this.studentsRepo.save(student)

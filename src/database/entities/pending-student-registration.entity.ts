@@ -19,8 +19,8 @@ export class PendingStudentRegistration {
   @Column()
   name: string
 
-  @Column()
-  phone: string
+  @Column({ nullable: true })
+  phone: string | null
 
   @Column()
   passwordHash: string

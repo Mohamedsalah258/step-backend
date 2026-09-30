@@ -108,7 +108,7 @@ export class StudentsService {
     const data = await Promise.all(
       rows.map(async (s, i) => {
         const subsCount = await this.subscriptionsRepo.count({
-          where: { studentId: s.id },
+          where: { studentId: s.id, status: SubscriptionStatus.ACTIVE },
         })
         return {
           id: s.id,
@@ -247,6 +247,26 @@ export class StudentsService {
     student.profileEditUnlocked = false
     await this.studentsRepo.save(student)
     await this.logActivity(ActionType.STUDENT_PROFILE_LOCKED, student, admin, {})
+    return { ok: true }
+  }
+
+  /** استثناء دائم من قفل الجهاز الواحد — لحسابات زي حساب مراجعة أبل/جوجل
+   * اللي لازم تسجّل دخول من أجهزة مختلفة في كل مرة (شوف
+   * StudentAuthService.login). عكس deviceReset، ده استثناء مستمر مش
+   * محاولة واحدة، ومالوش حد أقصى. */
+  async exemptDeviceLock(id: string, admin: JwtPayload) {
+    const student = await this.mustFind(id)
+    student.deviceLockExempt = true
+    await this.studentsRepo.save(student)
+    await this.logActivity(ActionType.DEVICE_LOCK_EXEMPT_ON, student, admin, {})
+    return { ok: true }
+  }
+
+  async enforceDeviceLock(id: string, admin: JwtPayload) {
+    const student = await this.mustFind(id)
+    student.deviceLockExempt = false
+    await this.studentsRepo.save(student)
+    await this.logActivity(ActionType.DEVICE_LOCK_EXEMPT_OFF, student, admin, {})
     return { ok: true }
   }
 
